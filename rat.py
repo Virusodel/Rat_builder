@@ -1055,10 +1055,5 @@ try:
 except:
     pass
 
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(CallbackQueryHandler(callback))
-dp.add_handler(MessageHandler(Filters.document, handle_document))
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
 updater.start_polling()
 updater.idle()
