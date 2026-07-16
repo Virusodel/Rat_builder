@@ -27,12 +27,11 @@ jobs:
       
       - name: Replace token and admin_id in Program.cs
         run: |
-          powershell -Command "
           $content = Get-Content Program.cs -Raw
           $content = $content -replace '{{TOKEN}}', '${{ inputs.token }}'
           $content = $content -replace '{{ADMIN_ID}}', '${{ inputs.admin_id }}'
           Set-Content Program.cs -Value $content
-          "
+        shell: pwsh
       
       - name: Build EXE
         run: |
