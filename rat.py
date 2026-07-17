@@ -698,9 +698,9 @@ def record_screen(duration=10):
         screen = ImageGrab.grab()
         width, height = screen.size
         filename = f"screen_record_{datetime.now().strftime('%H%M%S')}.avi"
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
         full_path = os.path.join(tempfile.gettempdir(), filename)
-out = cv2.VideoWriter(full_path, fourcc, 10, (width, height))
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(full_path, fourcc, 10, (width, height))
         for _ in range(duration * 10):
             img = ImageGrab.grab()
             frame = np.array(img)
@@ -709,8 +709,8 @@ out = cv2.VideoWriter(full_path, fourcc, 10, (width, height))
             time.sleep(0.1)
         out.release()
         return full_path
-    except:
-        return "Error"
+    except Exception as e:
+        return f"Error: {e}"
 
 def record_webcam(duration=10):
     try:
