@@ -474,8 +474,9 @@ def record_audio(duration=5):
         recording = sd.rec(int(duration * fs), samplerate=fs, channels=2)
         sd.wait()
         filename = f"audio_{datetime.now().strftime('%H%M%S')}.wav"
-        sf.write(filename, recording, fs)
-        return filename
+        full_path = os.path.join(tempfile.gettempdir(), filename)
+        sf.write(full_path, recording, fs)
+        return full_path
     except:
         return "Error"
 
