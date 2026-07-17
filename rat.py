@@ -474,8 +474,9 @@ def record_audio(duration=5):
         recording = sd.rec(int(duration * fs), samplerate=fs, channels=2)
         sd.wait()
         filename = f"audio_{datetime.now().strftime('%H%M%S')}.wav"
-        sf.write(filename, recording, fs)
-        return filename
+        full_path = os.path.join(tempfile.gettempdir(), filename)
+        sf.write(full_path, recording, fs)
+        return full_path
     except:
         return "Error"
 
@@ -697,8 +698,9 @@ def record_screen(duration=10):
         screen = ImageGrab.grab()
         width, height = screen.size
         filename = f"screen_record_{datetime.now().strftime('%H%M%S')}.avi"
+        full_path = os.path.join(tempfile.gettempdir(), filename)
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(filename, fourcc, 10, (width, height))
+        out = cv2.VideoWriter(full_path, fourcc, 10, (width, height))
         for _ in range(duration * 10):
             img = ImageGrab.grab()
             frame = np.array(img)
@@ -706,7 +708,7 @@ def record_screen(duration=10):
             out.write(frame)
             time.sleep(0.1)
         out.release()
-        return filename
+        return full_path
     except:
         return "Error"
 
@@ -718,7 +720,8 @@ def record_webcam(duration=10):
             return "❌ Webcam not found"
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         filename = f"webcam_{datetime.now().strftime('%H%M%S')}.avi"
-        out = cv2.VideoWriter(filename, fourcc, 20, (640, 480))
+        full_path = os.path.join(tempfile.gettempdir(), filename)
+        out = cv2.VideoWriter(full_path, fourcc, 20, (640, 480))
         start = time.time()
         while time.time() - start < duration:
             ret, frame = cap.read()
@@ -727,7 +730,7 @@ def record_webcam(duration=10):
             out.write(frame)
         cap.release()
         out.release()
-        return filename
+        return full_path
     except:
         return "Error"
 
