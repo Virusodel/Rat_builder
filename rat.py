@@ -1090,6 +1090,95 @@ def change_resolution(width=1920, height=1080):
     except:
         return "❌ Ошибка"
 
+def reduce_screen():
+    try:
+        import ctypes
+        from ctypes import wintypes
+        
+        user32 = ctypes.windll.user32
+        user32.ChangeDisplaySettingsW.argtypes = [ctypes.POINTER(DEVMODE), ctypes.c_uint]
+        user32.ChangeDisplaySettingsW.restype = ctypes.c_uint
+        
+        class DEVMODE(ctypes.Structure):
+            _fields_ = [
+                ("dmDeviceName", ctypes.c_wchar * 32),
+                ("dmSpecVersion", ctypes.c_ushort),
+                ("dmDriverVersion", ctypes.c_ushort),
+                ("dmSize", ctypes.c_ushort),
+                ("dmDriverExtra", ctypes.c_ushort),
+                ("dmFields", ctypes.c_uint),
+                ("dmOrientation", ctypes.c_short),
+                ("dmPaperSize", ctypes.c_short),
+                ("dmPaperLength", ctypes.c_short),
+                ("dmPaperWidth", ctypes.c_short),
+                ("dmScale", ctypes.c_short),
+                ("dmCopies", ctypes.c_short),
+                ("dmDefaultSource", ctypes.c_short),
+                ("dmPrintQuality", ctypes.c_short),
+                ("dmColor", ctypes.c_short),
+                ("dmDuplex", ctypes.c_short),
+                ("dmYResolution", ctypes.c_short),
+                ("dmTTOption", ctypes.c_short),
+                ("dmCollate", ctypes.c_short),
+                ("dmFormName", ctypes.c_wchar * 32),
+                ("dmLogPixels", ctypes.c_ushort),
+                ("dmBitsPerPel", ctypes.c_uint),
+                ("dmPelsWidth", ctypes.c_uint),
+                ("dmPelsHeight", ctypes.c_uint),
+                ("dmDisplayFlags", ctypes.c_uint),
+                ("dmDisplayFrequency", ctypes.c_uint),
+                ("dmICMMethod", ctypes.c_uint),
+                ("dmICMIntent", ctypes.c_uint),
+                ("dmMediaType", ctypes.c_uint),
+                ("dmDitherType", ctypes.c_uint),
+                ("dmReserved1", ctypes.c_uint),
+                ("dmReserved2", ctypes.c_uint),
+                ("dmPanningWidth", ctypes.c_uint),
+                ("dmPanningHeight", ctypes.c_uint),
+            ]
+        
+        devmode = DEVMODE()
+        devmode.dmSize = ctypes.sizeof(DEVMODE)
+        result = user32.EnumDisplaySettingsW(None, 0xFFFFFFFF, ctypes.byref(devmode))
+        if not result:
+            return "❌ Не удалось получить настройки экрана"
+        
+        orig_width = devmode.dmPelsWidth
+        orig_height = devmode.dmPelsHeight
+        new_width = int(orig_width * 0.75)
+        new_height = int(orig_height * 0.75)
+        if new_width < 800 or new_height < 600:
+            new_width = 800
+            new_height = 600
+        
+        devmode.dmPelsWidth = new_width
+        devmode.dmPelsHeight = new_height
+        devmode.dmFields = 0x0001 | 0x0002
+        
+        result = user32.ChangeDisplaySettingsW(ctypes.byref(devmode), 0x0004)
+        if result == 0:
+            return f"✅ Экран уменьшен до {new_width}x{new_height}"
+        elif result == 1:
+            return "✅ Экран уменьшен! (требуется перезагрузка)"
+        elif result == -1:
+            return "❌ Ошибка изменения разрешения"
+        else:
+            return f"❌ Ошибка: {result}"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+def restore_screen():
+    try:
+        import ctypes
+        user32 = ctypes.windll.user32
+        result = user32.ChangeDisplaySettingsW(None, 0x0004)
+        if result == 0:
+            return "✅ Экран восстановлен!"
+        else:
+            return f"❌ Ошибка восстановления: {result}"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
 def change_orientation(orientation="landscape"):
     try:
         import ctypes
@@ -2273,6 +2362,8 @@ def start(update, context):
     ("🌀 Matrix Effect", "matrix"),
     ("🌀 Screen Shake", "screen_shake"),
     ("🌀 RGB Effect", "rgb"),
+    ("📉 Reduce Screen", "reduce_screen"),
+    ("📈 Restore Screen", "restore_screen"),
     
     # ============ ЗВУК ============
     ("🔊 Beep", "beep"),
@@ -2455,6 +2546,16 @@ def callback(update, context):
     if data == "rgb":
         context.bot.send_message(chat_id, "🌈 Запускаю RGB эффект...")
         run_in_thread(rgb_effect)
+        return
+
+    elif data == "reduce_screen":
+        pc_name = selected_pc if selected_pc else PC_ID
+        context.bot.send_message(chat_id, f"📉 Reduce Screen on `{pc_name}`:\n{reduce_screen()}", parse_mode="Markdown")
+        return
+
+    elif data == "restore_screen":
+        pc_name = selected_pc if selected_pc else PC_ID
+        context.bot.send_message(chat_id, f"📈 Restore Screen on `{pc_name}`:\n{restore_screen()}", parse_mode="Markdown")
         return
 
     if data == "screen_shake":
