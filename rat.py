@@ -634,8 +634,8 @@ def pixellate_screen():
         def update():
             try:
                 img = ImageGrab.grab()
-                small = img.resize((80, 60), Image.NEAREST)
-                big = small.resize(img.size, Image.NEAREST)
+                small = img.resize((80, 60), Image.Resampling.NEAREST)
+                big = small.resize(img.size, Image.Resampling.NEAREST)
                 from PIL import ImageTk
                 tk_img = ImageTk.PhotoImage(big)
                 pb.config(image=tk_img)
