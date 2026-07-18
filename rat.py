@@ -3149,10 +3149,10 @@ def handle_document(update, context):
     doc = update.message.document
 
     # --- Воспроизведение аудио-файла ---
-if context.user_data.get('awaiting_audio'):
-    context.user_data['awaiting_audio'] = False
-    play_audio_from_document(update, context)
-    return
+    if context.user_data.get('awaiting_audio'):
+        context.user_data['awaiting_audio'] = False
+        play_audio_from_document(update, context)
+        return
     
     # Загрузка файла через Upload File
     if context.user_data.get('awaiting_upload'):
