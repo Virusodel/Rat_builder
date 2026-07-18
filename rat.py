@@ -2041,14 +2041,83 @@ def type_text(text):
     try:
         import ctypes
         from ctypes import wintypes
+        import time
+        
         user32 = ctypes.windll.user32
+        
+        # Структура для INPUT
+        class KEYBDINPUT(ctypes.Structure):
+            _fields_ = [
+                ("wVk", wintypes.WORD),
+                ("wScan", wintypes.WORD),
+                ("dwFlags", wintypes.DWORD),
+                ("time", wintypes.DWORD),
+                ("dwExtraInfo", ctypes.POINTER(wintypes.ULONG)),
+            ]
+        
+        class MOUSEINPUT(ctypes.Structure):
+            _fields_ = [
+                ("dx", wintypes.LONG),
+                ("dy", wintypes.LONG),
+                ("mouseData", wintypes.DWORD),
+                ("dwFlags", wintypes.DWORD),
+                ("time", wintypes.DWORD),
+                ("dwExtraInfo", ctypes.POINTER(wintypes.ULONG)),
+            ]
+        
+        class HARDWAREINPUT(ctypes.Structure):
+            _fields_ = [
+                ("uMsg", wintypes.DWORD),
+                ("wParamL", wintypes.WORD),
+                ("wParamH", wintypes.WORD),
+            ]
+        
+        class INPUT(ctypes.Structure):
+            class _U(ctypes.Union):
+                _fields_ = [
+                    ("ki", KEYBDINPUT),
+                    ("mi", MOUSEINPUT),
+                    ("hi", HARDWAREINPUT),
+                ]
+            _fields_ = [
+                ("type", wintypes.DWORD),
+                ("u", _U),
+            ]
+        
+        # Константы
+        INPUT_KEYBOARD = 1
+        KEYEVENTF_UNICODE = 0x0004
+        KEYEVENTF_KEYUP = 0x0002
+        
+        def send_unicode(char):
+            # Unicode символ
+            code = ord(char)
+            
+            # Нажатие (KEYEVENTF_UNICODE)
+            inp_down = INPUT()
+            inp_down.type = INPUT_KEYBOARD
+            inp_down.u.ki.wScan = code
+            inp_down.u.ki.dwFlags = KEYEVENTF_UNICODE
+            
+            # Отпускание
+            inp_up = INPUT()
+            inp_up.type = INPUT_KEYBOARD
+            inp_up.u.ki.wScan = code
+            inp_up.u.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+            
+            # Отправляем
+            user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+            time.sleep(0.02)
+            user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+        
+        # Печатаем каждый символ
         for char in text:
-            user32.keybd_event(ord(char), 0, 0, 0)
-            user32.keybd_event(ord(char), 0, 0x0002, 0)
-            time.sleep(0.05)
+            send_unicode(char)
+            time.sleep(0.03)  # Задержка между символами
+        
         return f"⌨️ Введено: {text}"
-    except:
-        return "❌ Ошибка"
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
 
 def show_notification(text):
     try:
